@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AG Post-Call Intelligence Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-blue: #0000ff;
+            --light-blue: #e6e6ff;
+            --white: #ffffff;
+            --gray-light: #f5f5f5;
+            --gray-medium: #e0e0e0;
+            --gray-dark: #333333;
+            --green-positive: #4CAF50;
+            --yellow-neutral: #FFC107;
+            --red-negative: #F44336;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--white);
+            color: var(--gray-dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header Styles */
+        .header {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, #3333ff 100%);
+            color: var(--white);
+            padding: 25px 30px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 255, 0.15);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .header h1 i {
+            font-size: 2.5rem;
+        }
+        
+        .logo {
+            font-weight: 800;
+            font-size: 2.5rem;
+            letter-spacing: 1px;
+        }
+        
+        .input-section {
+            background-color: var(--light-blue);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 5px solid var(--primary-blue);
+        }
+        
+        .input-section h2 {
+            color: var(--primary-blue);
+            margin-bottom: 15px;
+            font-size: 1.6rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 2px solid var(--primary-blue);
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            resize: vertical;
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn:hover {
+            background-color: #0000cc;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 255, 0.2);
+        }
+        
+        .btn-sample {
+            background-color: var(--gray-medium);
+            color: var(--gray-dark);
+            margin-left: 15px;
+        }
+        
+        .btn-sample:hover {
+            background-color: var(--gray-dark);
+            color: white;
+        }
+        
+        /* Dashboard Sections */
+        .dashboard-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background-color: var(--white);
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+            border-top: 4px solid var(--primary-blue);
+        }
+        
+        .card h3 {
+            color: var(--primary-blue);
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--gray-medium);
+        }
+        
+        .card-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .metric {
+            background-color: var(--light-blue);
+            padding: 18px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-blue);
+        }
+        
+        .metric-label {
+            font-weight: 600;
+            color: var(--gray-dark);
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+        
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+        }
+        
+        .metric-small {
+            font-size: 1.4rem;
+        }
+        
+        .metric-unit {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: normal;
+        }
+        
+        /* Charts */
+        .chart-container {
+            height: 300px;
+            position: relative;
+            margin-top: 15px;
+        }
+        
+        /* Transcribe Section */
+        .transcribe-container {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: var(--gray-light);
+            border-radius: 8px;
+            border: 1px solid var(--gray-medium);
+        }
+        
+        .transcribe-segment {
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+        
+        .agent-speech {
+            background-color: #e6f7ff;
+            border-left-color: var(--primary-blue);
+        }
+        
+        .customer-speech {
+            background-color: #f0f9ff;
+            border-left-color: #0066cc;
+        }
+        
+        .segment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .segment-speaker {
+            font-weight: 700;
+        }
+        
+        .segment-time {
+            font-family: monospace;
+        }
+        
+        .segment-text {
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 25px;
+            margin-top: 30px;
+            color: var(--gray-dark);
+            border-top: 1px solid var(--gray-medium);
+            font-size: 0.95rem;
+        }
+        
+        .footer span {
+            color: var(--primary-blue);
+            font-weight: 600;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background-color: var(--light-blue);
+            border-radius: 8px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            font-weight: 600;
+            flex: 1;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .tab.active {
+            background-color: var(--primary-blue);
+            color: white;
+        }
+        
+        .tab:hover:not(.active) {
+            background-color: rgba(0, 0, 255, 0.1);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Progress bars */
+        .progress-container {
+            margin-top: 10px;
+        }
+        
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background-color: var(--gray-medium);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-blue);
+            border-radius: 5px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .dashboard-section {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .card-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+        }
+        
+        /* Color coding for sentiment */
+        .positive {
+            color: var(--green-positive);
+        }
+        
+        .neutral {
+            color: var(--yellow-neutral);
+        }
+        
+        .negative {
+            color: var(--red-negative);
+        }
+        
+        .sentiment-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: inline-block;
+        }
+        
+        .sentiment-positive {
+            background-color: rgba(76, 175, 80, 0.15);
+            color: var(--green-positive);
+        }
+        
+        .sentiment-neutral {
+            background-color: rgba(255, 193, 7, 0.15);
+            color: var(--yellow-neutral);
+        }
+        
+        .sentiment-negative {
+            background-color: rgba(244, 67, 54, 0.15);
+            color: var(--red-negative);
+        }
+        
+        /* Call checkpoints */
+        .checkpoint {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--gray-light);
+        }
+        
+        .checkpoint-status {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .checkpoint-completed {
+            background-color: var(--green-positive);
+            color: white;
+        }
+        
+        .checkpoint-incomplete {
+            background-color: var(--red-negative);
+            color: white;
+        }
+        
+        .checkpoint-partial {
+            background-color: var(--yellow-neutral);
+            color: black;
+        }
+        
+        .checkpoint-details {
+            flex-grow: 1;
+        }
+        
+        .checkpoint-name {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+        
+        .checkpoint-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div>
+                <h1><i class="fas fa-chart-line"></i> AG Post-Call Intelligence Dashboard</h1>
+                <p>Advanced analytics for call center performance and customer interaction insights</p>
+            </div>
+            <div class="logo">AG</div>
+        </header>
+        
+        <div class="input-section">
+            <h2><i class="fas fa-database"></i> Input JSON Data</h2>
+            <p>Paste your call analytics JSON data below to generate the dashboard:</p>
+            <textarea id="jsonInput" placeholder='Paste your JSON data here...'></textarea>
+            <div>
+                <button class="btn" id="generateBtn">
+                    <i class="fas fa-play-circle"></i> Generate Dashboard
+                </button>
+                <button class="btn btn-sample" id="sampleBtn">
+                    <i class="fas fa-magic"></i> Load Sample Data
+                </button>
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="overview">Overview</div>
+            <div class="tab" data-tab="transcribe">Call Transcribe</div>
+            <div class="tab" data-tab="performance">Agent Performance</div>
+            <div class="tab" data-tab="details">Detailed Metrics</div>
+        </div>
+        
+        <!-- Overview Tab -->
+        <div class="tab-content active" id="overview-tab">
+            <div class="dashboard-section">
+                <div class="card">
+                    <h3><i class="fas fa-info-circle"></i> Call Overview</h3>
+                    <div class="card-content">
+                        <div class="metric">
+                            <div class="metric-label">Employee</div>
+                            <div class="metric-value" id="employee-name">-</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Customer Number</div>
+                            <div class="metric-value metric-small" id="customer-number">-</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Call Date & Time</div>
+                            <div class="metric-value metric-small" id="call-datetime">-</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Duration</div>
+                            <div class="metric-value" id="call-duration">-</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3><i class="fas fa-bullseye"></i> Call Purpose & Outcome</h3>
+                    <div class="card-content">
+                        <div class="metric">
+                            <div class="metric-label">Main Purpose</div>
+                            <div class="metric-value metric-small" id="main-purpose">-</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Outcome</div>
+                            <div class="metric-value metric-small" id="call-outcome">-</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Next Actions</div>
+                            <div class="metric-value metric-small" id="next-actions">-</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Overall Sentiment</div>
+                            <div class="metric-value metric-small" id="sentiment">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="dashboard-section">
+                <div class="card">
+                    <h3><i class="fas fa-chart-pie"></i> Talk Ratio Analysis</h3>
+                    <div class="chart-container">
+                        <canvas id="talkRatioChart"></canvas>
+                    </div>
+                    <div class="card-content">
+                        <div class="metric">
+                            <div class="metric-label">Agent Talk Time</div>
+                            <div class="metric-value" id="agent-talk-time">- <span class="metric-unit">seconds</span></div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Customer Talk Time</div>
+                            <div class="metric-value" id="customer-talk-time">- <span class="metric-unit">seconds</span></div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Silence Time</div>
+                            <div class="metric-value" id="silence-time">- <span class="metric-unit">seconds</span></div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Dominant Speaker</div>
+                            <div class="metric-value metric-small" id="dominant-speaker">-</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3><i class="fas fa-chart-bar"></i> Performance Metrics</h3>
+                    <div class="chart-container">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                    <div class="card-content">
+                        <div class="metric">
+                            <div class="metric-label">Performance Score</div>
+                            <div class="metric-value" id="performance-score">- <span class="metric-unit">/100</span></div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Interruptions</div>
+                            <div class="metric-value" id="interruptions">-</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Questions Asked</div>
+                            <div class="metric-value" id="total-questions">-</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Call Category</div>
+                            <div class="metric-value metric-small" id="call-category">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Transcribe Tab -->
+        <div class="tab-content" id="transcribe-tab">
+            <div class="card">
+                <h3><i class="fas fa-comments"></i> Call Transcribe</h3>
+                <div class="transcribe-container" id="transcribe-container">
+                    <!-- Transcribe segments will be inserted here -->
+                    <p class="no-data">No data available. Please load JSON data.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Performance Tab -->
+        <div class="tab-content" id="performance-tab">
+            <div class="dashboard-section">
+                <div class="card">
+                    <h3><i class="fas fa-star"></i> Agent Performance</h3>
+                    <div class="card-content">
+                        <div class="metric">
+                            <div class="metric-label">Performance Score</div>
+                            <div class="metric-value" id="detailed-score">- <span class="metric-unit">/100</span></div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Pitch Clarity</div>
+                            <div class="metric-value" id="clarity-score">- <span class="metric-unit">/10</span></div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Objections Raised</div>
+                            <div class="metric-value" id="objections-raised">-</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Objections Addressed</div>
+                            <div class="metric-value" id="objections-addressed">-</div>
+                        </div>
+                    </div>
+                    
+                    <h4 style="margin-top: 25px; color: var(--primary-blue);"><i class="fas fa-check-circle"></i> Strengths</h4>
+                    <div id="strengths-container" style="margin-bottom: 20px;">
+                        <p class="no-data">No data available.</p>
+                    </div>
+                    
+                    <h4 style="color: var(--primary-blue);"><i class="fas fa-exclamation-triangle"></i> Improvement Areas</h4>
+                    <div id="improvements-container">
+                        <p class="no-data">No data available.</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3><i class="fas fa-tasks"></i> Call Checkpoints</h3>
+                    <div id="checkpoints-container">
+                        <!-- Checkpoints will be inserted here -->
+                        <p class="no-data">No data available. Please load JSON data.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Details Tab -->
+        <div class="tab-content" id="details-tab">
+            <div class="dashboard-section">
+                <div class="card">
+                    <h3><i class="fas fa-cogs"></i> Detailed Metrics</h3>
+                    <div class="card-content" id="detailed-metrics">
+                        <!-- Detailed metrics will be inserted here -->
+                        <p class="no-data">No data available. Please load JSON data.</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3><i class="fas fa-key"></i> Keywords & Categories</h3>
+                    <div class="card-content" id="keywords-container">
+                        <!-- Keywords will be inserted here -->
+                        <p class="no-data">No data available. Please load JSON data.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="footer">
+            <p>Developed by <span>team AhaGuru Analytics</span></p>
+            <p>AG Post-Call Intelligence Dashboard v1.0</p>
+        </footer>
+    </div>
+
+    <script>
+        // Sample data matching the provided structure
+        const sampleData = {
+            "Employee Id": "AGC237",
+            "Employee Name": "Aiswarya Pandian",
+            "Executive Number": "8838882036",
+            "Customer Number": "6281771340",
+            "Start Date": "8/12/2025",
+            "Start Time": "11:45:06",
+            "End Date": "8/12/2025",
+            "End Time": "11:50:36",
+            "Duration": "0:05:30",
+            "Recording Link": "https://recordings.mcube.com/mcubefiles111/classic/2025/12/2905/outbound/88388820361765174506.wav",
+            "Call transcribe": [
+                {
+                    "start_time": "00:00:00.000",
+                    "end_time": "00:00:09.000",
+                    "text": "Good morning, sir. This is Aishwarya calling you from AHA Guru Education Technology."
+                },
+                {
+                    "start_time": "00:00:09.000",
+                    "end_time": "00:00:11.000",
+                    "text": "Yes, please tell me."
+                }
+            ],
+            "call_metadata.call_source": "marketing_call",
+            "speaker_analysis.speaker_segments": [],
+            "speaker_analysis.speaker_summary.agent_segments_count": 25,
+            "speaker_analysis.speaker_summary.customer_segments_count": 26,
+            "speaker_analysis.speaker_summary.dominant_speaker": "CUSTOMER",
+            "speaker_analysis.speaker_summary.speaker_switch_count": 36,
+            "call_overview.basic_summary": "Agent Aishwarya from AHA Guru calls a customer regarding a new lead enquiry, but discovers the customer is already a paying customer who purchased courses on November 23rd, 2025. The customer reports a technical issue: they have registered and paid for live classes but cannot access any classes on the site. The agent collects alternative contact information and the customer's username to investigate the CRM issue.",
+            "call_overview.main_purpose": "SUPPORT",
+            "call_overview.outcome": "FOLLOW_UP_NEEDED",
+            "call_overview.next_actions_agreed": "Agent will check the CRM system with the provided information (alternative number 86390333572 and username umma.pakaf57994@gmail.com) and get back to the customer within 5 minutes regarding the missing class access.",
+            "sentiment_tracking.overall_call_sentiment.sentiment_label": "NEUTRAL",
+            "sentiment_tracking.overall_call_sentiment.sentiment_score": 0,
+            "sentiment_tracking.overall_call_sentiment.agent_sentiment": "NEUTRAL",
+            "sentiment_tracking.overall_call_sentiment.customer_sentiment": "NEUTRAL",
+            "sentiment_tracking.sentiment_changes": [
+                {
+                    "time_window": "00:00-01:00",
+                    "sentiment": "NEUTRAL",
+                    "dominant_emotion": "INFORMATIVE"
+                }
+            ],
+            "talk_ratio_analysis.talk_time_seconds.agent_total_seconds": 100,
+            "talk_ratio_analysis.talk_time_seconds.customer_total_seconds": 110,
+            "talk_ratio_analysis.talk_time_seconds.silence_total_seconds": 30,
+            "talk_ratio_analysis.talk_percentage.agent_percentage": 41.7,
+            "talk_ratio_analysis.talk_percentage.customer_percentage": 45.8,
+            "talk_ratio_analysis.talk_percentage.silence_percentage": 12.5,
+            "talk_ratio_analysis.average_turn_length.agent_avg_seconds": 4,
+            "talk_ratio_analysis.average_turn_length.customer_avg_seconds": 4.23,
+            "interruption_analysis.total_interruptions": 1,
+            "interruption_analysis.interruption_details": [
+                {
+                    "interrupter": "CUSTOMER",
+                    "interrupted": "AGENT",
+                    "timestamp": "00:02:16.000"
+                }
+            ],
+            "interruption_analysis.interruption_frequency": "0.33 interruptions per minute",
+            "silence_analysis.total_silence_seconds": 30,
+            "silence_analysis.silence_distribution": [
+                {
+                    "start": "00:02:26.000",
+                    "end": "00:02:46.000",
+                    "duration_seconds": 20
+                }
+            ],
+            "silence_analysis.longest_silence.duration_seconds": 29,
+            "silence_analysis.longest_silence.occurred_at": "00:03:35-00:04:04",
+            "silence_analysis.silence_pattern": "HIGH",
+            "keywords_monitoring.key_products_mentioned": ["IIT, JEE coaching", "NEET", "CBC online classes", "live classes"],
+            "keywords_monitoring.important_phrases": ["already registered", "didn't receive any classes", "check with CRM", "new lead", "alternative number"],
+            "keywords_monitoring.competitors_mentioned": [],
+            "keywords_monitoring.price_mentions": [],
+            "call_categorization.primary_category": "TECHNICAL_SUPPORT",
+            "call_categorization.secondary_categories": ["CUSTOMER_SERVICE", "ACCOUNT_VERIFICATION"],
+            "call_categorization.sales_stage": "POST_SALE_SUPPORT",
+            "call_categorization.customer_type": "EXISTING",
+            "call_categorization.product_focus": "ONLINE_CLASSES_PLATFORM",
+            "call_categorization.category_confidence": 0.95,
+            "agent_performance.performance_score": 70,
+            "agent_performance.strengths": ["Quickly pivoted from sales to support mode", "Professional and polite tone", "Actively listened to customer issue", "Gathered necessary information (date, username, number)", "Set clear expectation for follow-up (5 minutes)"],
+            "agent_performance.improvement_areas": ["Initial assumption was incorrect (thought it was a new lead)", "Could have apologized for the inconvenience", "Did not verify the customer's issue clearly before putting on hold", "Could have provided more reassurance about resolving the issue"],
+            "agent_performance.question_analysis.open_ended_questions": 1,
+            "agent_performance.question_analysis.closed_ended_questions": 7,
+            "agent_performance.question_analysis.probing_questions": 3,
+            "agent_performance.objection_handling.objections_raised": 0,
+            "agent_performance.objection_handling.effectively_addressed": 0,
+            "agent_performance.pitch_delivery.clarity_score": 7,
+            "agent_performance.pitch_delivery.benefits_highlighted": 0,
+            "agent_performance.pitch_delivery.features_explained": 0,
+            "call_timing_metrics.total_call_duration.formatted": "00:05:09",
+            "call_timing_metrics.total_call_duration.total_seconds": 309,
+            "call_timing_metrics.hold_time_analysis.total_hold_seconds": 20,
+            "call_timing_metrics.hold_time_analysis.hold_instances": 1,
+            "call_timing_metrics.response_timing.average_response_time_agent": 1.5,
+            "call_timing_metrics.response_timing.average_response_time_customer": 2,
+            "call_checkpoints": [
+                {
+                    "checkpoint_id": "CHECKPOINT_1",
+                    "checkpoint_name": "OPENING_AND_GREETING",
+                    "achieved_at": "00:00:09.000",
+                    "status": "COMPLETED",
+                    "duration_seconds": 9
+                },
+                {
+                    "checkpoint_id": "CHECKPOINT_2",
+                    "checkpoint_name": "CUSTOMER_IDENTIFICATION",
+                    "achieved_at": "00:00:23.000",
+                    "status": "COMPLETED",
+                    "duration_seconds": 14
+                }
+            ]
+        };
+
+        // Global variables
+        let currentData = null;
+        let talkRatioChart = null;
+        let performanceChart = null;
+
+        // DOM elements
+        const jsonInput = document.getElementById('jsonInput');
+        const generateBtn = document.getElementById('generateBtn');
+        const sampleBtn = document.getElementById('sampleBtn');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        // Initialize with sample data
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load sample data
+            jsonInput.value = JSON.stringify(sampleData, null, 2);
+            processData(sampleData);
+            
+            // Setup event listeners
+            generateBtn.addEventListener('click', function() {
+                try {
+                    const data = JSON.parse(jsonInput.value);
+                    processData(data);
+                } catch (error) {
+                    alert('Invalid JSON data. Please check your input.');
+                    console.error('JSON parsing error:', error);
+                }
+            });
+            
+            sampleBtn.addEventListener('click', function() {
+                jsonInput.value = JSON.stringify(sampleData, null, 2);
+                processData(sampleData);
+            });
+            
+            // Tab switching
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // Update active tab
+                    tabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show active content
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        if (content.id === `${tabId}-tab`) {
+                            content.classList.add('active');
+                        }
+                    });
+                });
+            });
+        });
+
+        // Process JSON data and update dashboard
+        function processData(data) {
+            currentData = data;
+            
+            // Update overview tab
+            updateOverview(data);
+            
+            // Update transcribe tab
+            updateTranscribe(data);
+            
+            // Update performance tab
+            updatePerformance(data);
+            
+            // Update details tab
+            updateDetails(data);
+            
+            // Create charts
+            createCharts(data);
+        }
+
+        // Update overview tab
+        function updateOverview(data) {
+            // Basic call info
+            document.getElementById('employee-name').textContent = data['Employee Name'] || '-';
+            document.getElementById('customer-number').textContent = data['Customer Number'] || '-';
+            
+            const callDate = `${data['Start Date']} ${data['Start Time']}`;
+            document.getElementById('call-datetime').textContent = callDate || '-';
+            document.getElementById('call-duration').textContent = data['Duration'] || '-';
+            
+            // Call purpose and outcome
+            document.getElementById('main-purpose').textContent = data['call_overview.main_purpose'] || '-';
+            document.getElementById('call-outcome').textContent = data['call_overview.outcome'] || '-';
+            document.getElementById('next-actions').textContent = 
+                data['call_overview.next_actions_agreed'] ? 
+                data['call_overview.next_actions_agreed'].substring(0, 50) + '...' : '-';
+            
+            // Sentiment with color coding
+            const sentimentLabel = data['sentiment_tracking.overall_call_sentiment.sentiment_label'] || '-';
+            const sentimentElem = document.getElementById('sentiment');
+            sentimentElem.textContent = sentimentLabel;
+            sentimentElem.className = 'metric-value metric-small';
+            
+            if (sentimentLabel === 'POSITIVE') {
+                sentimentElem.classList.add('positive');
+            } else if (sentimentLabel === 'NEUTRAL') {
+                sentimentElem.classList.add('neutral');
+            } else if (sentimentLabel === 'NEGATIVE') {
+                sentimentElem.classList.add('negative');
+            }
+            
+            // Talk ratio metrics
+            document.getElementById('agent-talk-time').innerHTML = 
+                `${data['talk_ratio_analysis.talk_time_seconds.agent_total_seconds'] || 0} <span class="metric-unit">seconds</span>`;
+            document.getElementById('customer-talk-time').innerHTML = 
+                `${data['talk_ratio_analysis.talk_time_seconds.customer_total_seconds'] || 0} <span class="metric-unit">seconds</span>`;
+            document.getElementById('silence-time').innerHTML = 
+                `${data['talk_ratio_analysis.talk_time_seconds.silence_total_seconds'] || 0} <span class="metric-unit">seconds</span>`;
+            document.getElementById('dominant-speaker').textContent = 
+                data['speaker_analysis.speaker_summary.dominant_speaker'] || '-';
+            
+            // Performance metrics
+            document.getElementById('performance-score').innerHTML = 
+                `${data['agent_performance.performance_score'] || 0} <span class="metric-unit">/100</span>`;
+            document.getElementById('interruptions').textContent = 
+                data['interruption_analysis.total_interruptions'] || 0;
+            
+            const totalQuestions = (data['agent_performance.question_analysis.open_ended_questions'] || 0) +
+                                  (data['agent_performance.question_analysis.closed_ended_questions'] || 0) +
+                                  (data['agent_performance.question_analysis.probing_questions'] || 0);
+            document.getElementById('total-questions').textContent = totalQuestions;
+            
+            document.getElementById('call-category').textContent = 
+                data['call_categorization.primary_category'] || '-';
+        }
+
+        // Update transcribe tab
+        function updateTranscribe(data) {
+            const container = document.getElementById('transcribe-container');
+            const transcribeData = data['Call transcribe'];
+            
+            if (!transcribeData || !Array.isArray(transcribeData) || transcribeData.length === 0) {
+                container.innerHTML = '<p class="no-data">No transcribe data available.</p>';
+                return;
+            }
+            
+            let html = '';
+            
+            // Use speaker segments if available, otherwise use generic transcribe
+            const speakerSegments = data['speaker_analysis.speaker_segments'];
+            
+            if (speakerSegments && Array.isArray(speakerSegments) && speakerSegments.length > 0) {
+                // Use speaker segments which have speaker identification
+                speakerSegments.forEach(segment => {
+                    const isAgent = segment.detected_speaker === 'AGENT';
+                    const speakerClass = isAgent ? 'agent-speech' : 'customer-speech';
+                    const speakerLabel = isAgent ? 'Agent' : 'Customer';
+                    
+                    html += `
+                        <div class="transcribe-segment ${speakerClass}">
+                            <div class="segment-header">
+                                <span class="segment-speaker">${speakerLabel}</span>
+                                <span class="segment-time">${segment.start_time} - ${segment.end_time}</span>
+                            </div>
+                            <div class="segment-text">${segment.text}</div>
+                        </div>
+                    `;
+                });
+            } else {
+                // Use regular transcribe data (no speaker identification)
+                transcribeData.forEach(segment => {
+                    html += `
+                        <div class="transcribe-segment agent-speech">
+                            <div class="segment-header">
+                                <span class="segment-speaker">Speaker</span>
+                                <span class="segment-time">${segment.start_time} - ${segment.end_time}</span>
+                            </div>
+                            <div class="segment-text">${segment.text}</div>
+                        </div>
+                    `;
+                });
+            }
+            
+            container.innerHTML = html;
+        }
+
+        // Update performance tab
+        function updatePerformance(data) {
+            // Performance metrics
+            document.getElementById('detailed-score').innerHTML = 
+                `${data['agent_performance.performance_score'] || 0} <span class="metric-unit">/100</span>`;
+            document.getElementById('clarity-score').innerHTML = 
+                `${data['agent_performance.pitch_delivery.clarity_score'] || 0} <span class="metric-unit">/10</span>`;
+            document.getElementById('objections-raised').textContent = 
+                data['agent_performance.objection_handling.objections_raised'] || 0;
+            document.getElementById('objections-addressed').textContent = 
+                data['agent_performance.objection_handling.effectively_addressed'] || 0;
+            
+            // Strengths
+            const strengthsContainer = document.getElementById('strengths-container');
+            const strengths = data['agent_performance.strengths'];
+            
+            if (strengths && Array.isArray(strengths) && strengths.length > 0) {
+                let strengthsHtml = '';
+                strengths.forEach(strength => {
+                    strengthsHtml += `<div class="metric" style="margin-bottom: 10px;">
+                        <div class="metric-label" style="color: var(--green-positive);">
+                            <i class="fas fa-check-circle"></i> ${strength}
+                        </div>
+                    </div>`;
+                });
+                strengthsContainer.innerHTML = strengthsHtml;
+            } else {
+                strengthsContainer.innerHTML = '<p class="no-data">No strengths data available.</p>';
+            }
+            
+            // Improvement areas
+            const improvementsContainer = document.getElementById('improvements-container');
+            const improvements = data['agent_performance.improvement_areas'];
+            
+            if (improvements && Array.isArray(improvements) && improvements.length > 0) {
+                let improvementsHtml = '';
+                improvements.forEach(improvement => {
+                    improvementsHtml += `<div class="metric" style="margin-bottom: 10px;">
+                        <div class="metric-label" style="color: var(--red-negative);">
+                            <i class="fas fa-exclamation-circle"></i> ${improvement}
+                        </div>
+                    </div>`;
+                });
+                improvementsContainer.innerHTML = improvementsHtml;
+            } else {
+                improvementsContainer.innerHTML = '<p class="no-data">No improvement areas data available.</p>';
+            }
+            
+            // Call checkpoints
+            const checkpointsContainer = document.getElementById('checkpoints-container');
+            const checkpoints = data['call_checkpoints'];
+            
+            if (checkpoints && Array.isArray(checkpoints) && checkpoints.length > 0) {
+                let checkpointsHtml = '';
+                checkpoints.forEach(checkpoint => {
+                    let statusClass = '';
+                    let statusIcon = '';
+                    
+                    if (checkpoint.status === 'COMPLETED') {
+                        statusClass = 'checkpoint-completed';
+                        statusIcon = '<i class="fas fa-check"></i>';
+                    } else if (checkpoint.status === 'INCOMPLETE') {
+                        statusClass = 'checkpoint-incomplete';
+                        statusIcon = '<i class="fas fa-times"></i>';
+                    } else if (checkpoint.status === 'PARTIALLY_COMPLETED') {
+                        statusClass = 'checkpoint-partial';
+                        statusIcon = '<i class="fas fa-exclamation"></i>';
+                    }
+                    
+                    checkpointsHtml += `
+                        <div class="checkpoint">
+                            <div class="checkpoint-status ${statusClass}">
+                                ${statusIcon}
+                            </div>
+                            <div class="checkpoint-details">
+                                <div class="checkpoint-name">${checkpoint.checkpoint_name || 'Unknown'}</div>
+                                <div class="checkpoint-meta">
+                                    <span>Achieved at: ${checkpoint.achieved_at || 'N/A'}</span>
+                                    <span>Duration: ${checkpoint.duration_seconds || 0}s</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                checkpointsContainer.innerHTML = checkpointsHtml;
+            } else {
+                checkpointsContainer.innerHTML = '<p class="no-data">No checkpoint data available.</p>';
+            }
+        }
+
+        // Update details tab
+        function updateDetails(data) {
+            // Detailed metrics
+            const detailedMetrics = document.getElementById('detailed-metrics');
+            
+            // Select key metrics to display
+            const metricsToShow = [
+                { label: 'Call Source', key: 'call_metadata.call_source' },
+                { label: 'Agent Segments', key: 'speaker_analysis.speaker_summary.agent_segments_count' },
+                { label: 'Customer Segments', key: 'speaker_analysis.speaker_summary.customer_segments_count' },
+                { label: 'Speaker Switch Count', key: 'speaker_analysis.speaker_summary.speaker_switch_count' },
+                { label: 'Average Turn Length (Agent)', key: 'talk_ratio_analysis.average_turn_length.agent_avg_seconds', unit: 's' },
+                { label: 'Average Turn Length (Customer)', key: 'talk_ratio_analysis.average_turn_length.customer_avg_seconds', unit: 's' },
+                { label: 'Interruption Frequency', key: 'interruption_analysis.interruption_frequency' },
+                { label: 'Total Silence', key: 'silence_analysis.total_silence_seconds', unit: 's' },
+                { label: 'Longest Silence', key: 'silence_analysis.longest_silence.duration_seconds', unit: 's' },
+                { label: 'Silence Pattern', key: 'silence_analysis.silence_pattern' },
+                { label: 'Total Call Duration', key: 'call_timing_metrics.total_call_duration.total_seconds', unit: 's' },
+                { label: 'Hold Time', key: 'call_timing_metrics.hold_time_analysis.total_hold_seconds', unit: 's' },
+                { label: 'Hold Instances', key: 'call_timing_metrics.hold_time_analysis.hold_instances' },
+                { label: 'Avg Response Time (Agent)', key: 'call_timing_metrics.response_timing.average_response_time_agent', unit: 's' },
+                { label: 'Avg Response Time (Customer)', key: 'call_timing_metrics.response_timing.average_response_time_customer', unit: 's' },
+                { label: 'Category Confidence', key: 'call_categorization.category_confidence', format: 'percent' }
+            ];
+            
+            let metricsHtml = '';
+            metricsToShow.forEach(metric => {
+                let value = getNestedValue(data, metric.key);
+                
+                if (value !== undefined && value !== null) {
+                    if (metric.unit) {
+                        value = `${value} ${metric.unit}`;
+                    } else if (metric.format === 'percent') {
+                        value = `${(value * 100).toFixed(1)}%`;
+                    }
+                } else {
+                    value = '-';
+                }
+                
+                metricsHtml += `
+                    <div class="metric">
+                        <div class="metric-label">${metric.label}</div>
+                        <div class="metric-value metric-small">${value}</div>
+                    </div>
+                `;
+            });
+            
+            detailedMetrics.innerHTML = metricsHtml;
+            
+            // Keywords and categories
+            const keywordsContainer = document.getElementById('keywords-container');
+            
+            let keywordsHtml = `
+                <div class="metric">
+                    <div class="metric-label">Key Products Mentioned</div>
+                    <div class="metric-value metric-small">${formatArray(data['keywords_monitoring.key_products_mentioned'])}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Important Phrases</div>
+                    <div class="metric-value metric-small">${formatArray(data['keywords_monitoring.important_phrases'])}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Competitors Mentioned</div>
+                    <div class="metric-value metric-small">${formatArray(data['keywords_monitoring.competitors_mentioned'])}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Price Mentions</div>
+                    <div class="metric-value metric-small">${formatArray(data['keywords_monitoring.price_mentions'])}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Secondary Categories</div>
+                    <div class="metric-value metric-small">${formatArray(data['call_categorization.secondary_categories'])}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Sales Stage</div>
+                    <div class="metric-value metric-small">${data['call_categorization.sales_stage'] || '-'}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Customer Type</div>
+                    <div class="metric-value metric-small">${data['call_categorization.customer_type'] || '-'}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Product Focus</div>
+                    <div class="metric-value metric-small">${data['call_categorization.product_focus'] || '-'}</div>
+                </div>
+            `;
+            
+            keywordsContainer.innerHTML = keywordsHtml;
+        }
+
+        // Create charts
+        function createCharts(data) {
+            // Destroy existing charts if they exist
+            if (talkRatioChart) {
+                talkRatioChart.destroy();
+            }
+            
+            if (performanceChart) {
+                performanceChart.destroy();
+            }
+            
+            // Talk Ratio Chart
+            const talkRatioCtx = document.getElementById('talkRatioChart').getContext('2d');
+            talkRatioChart = new Chart(talkRatioCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Agent', 'Customer', 'Silence'],
+                    datasets: [{
+                        data: [
+                            data['talk_ratio_analysis.talk_percentage.agent_percentage'] || 0,
+                            data['talk_ratio_analysis.talk_percentage.customer_percentage'] || 0,
+                            data['talk_ratio_analysis.talk_percentage.silence_percentage'] || 0
+                        ],
+                        backgroundColor: [
+                            '#0000ff',
+                            '#0066cc',
+                            '#cccccc'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.parsed.toFixed(1)}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Performance Chart
+            const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+            performanceChart = new Chart(performanceCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Open-Ended', 'Closed-Ended', 'Probing'],
+                    datasets: [{
+                        label: 'Questions Analysis',
+                        data: [
+                            data['agent_performance.question_analysis.open_ended_questions'] || 0,
+                            data['agent_performance.question_analysis.closed_ended_questions'] || 0,
+                            data['agent_performance.question_analysis.probing_questions'] || 0
+                        ],
+                        backgroundColor: [
+                            'rgba(0, 0, 255, 0.7)',
+                            'rgba(0, 102, 204, 0.7)',
+                            'rgba(0, 150, 255, 0.7)'
+                        ],
+                        borderColor: [
+                            '#0000ff',
+                            '#0066cc',
+                            '#0096ff'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Count'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Helper function to get nested value from object
+        function getNestedValue(obj, path) {
+            return path.split('.').reduce((current, key) => {
+                return current && current[key] !== undefined ? current[key] : undefined;
+            }, obj);
+        }
+
+        // Helper function to format array for display
+        function formatArray(arr) {
+            if (!arr || !Array.isArray(arr) || arr.length === 0) {
+                return 'None';
+            }
+            
+            if (arr.length <= 3) {
+                return arr.join(', ');
+            }
+            
+            return arr.slice(0, 3).join(', ') + `... (+${arr.length - 3} more)`;
+        }
+    </script>
+</body>
+</html>
