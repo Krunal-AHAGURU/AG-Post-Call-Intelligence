@@ -86,16 +86,41 @@
             gap: 10px;
         }
         
-        textarea {
-            width: 100%;
-            height: 200px;
-            padding: 15px;
-            border: 2px solid var(--primary-blue);
+        .file-upload {
+            border: 2px dashed var(--primary-blue);
             border-radius: 8px;
-            font-family: monospace;
-            font-size: 14px;
-            resize: vertical;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            background-color: var(--white);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload:hover {
+            background-color: var(--light-blue);
+        }
+        
+        .file-upload i {
+            font-size: 3rem;
+            color: var(--primary-blue);
             margin-bottom: 15px;
+        }
+        
+        .file-upload input[type="file"] {
+            display: none;
+        }
+        
+        .csv-preview {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+            border: 1px solid var(--gray-medium);
+            border-radius: 8px;
+            padding: 10px;
+            background-color: var(--white);
+            font-family: monospace;
+            font-size: 12px;
         }
         
         .btn {
@@ -119,15 +144,62 @@
             box-shadow: 0 4px 8px rgba(0, 0, 255, 0.2);
         }
         
-        .btn-sample {
-            background-color: var(--gray-medium);
-            color: var(--gray-dark);
-            margin-left: 15px;
+        .btn-csv {
+            background-color: #28a745;
         }
         
-        .btn-sample:hover {
-            background-color: var(--gray-dark);
+        .btn-csv:hover {
+            background-color: #218838;
+        }
+        
+        /* Call Selection Buttons */
+        .call-selection {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: var(--white);
+            border-radius: 8px;
+            border: 1px solid var(--gray-medium);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .call-btn {
+            background-color: var(--light-blue);
+            color: var(--primary-blue);
+            border: 1px solid var(--primary-blue);
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        
+        .call-btn:hover {
+            background-color: var(--primary-blue);
             color: white;
+        }
+        
+        .call-btn.active {
+            background-color: var(--primary-blue);
+            color: white;
+            font-weight: 600;
+        }
+        
+        .current-call-info {
+            background-color: var(--white);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--gray-medium);
+            margin-top: 15px;
+        }
+        
+        .current-call-info h4 {
+            color: var(--primary-blue);
+            margin-bottom: 10px;
         }
         
         /* Dashboard Sections */
@@ -435,6 +507,33 @@
             font-size: 0.9rem;
             color: #666;
         }
+        
+        /* Stats Summary */
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-item {
+            background-color: var(--light-blue);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--gray-dark);
+        }
     </style>
 </head>
 <body>
@@ -448,15 +547,55 @@
         </header>
         
         <div class="input-section">
-            <h2><i class="fas fa-database"></i> Input JSON Data</h2>
-            <p>Paste your call analytics JSON data below to generate the dashboard:</p>
-            <textarea id="jsonInput" placeholder='Paste your JSON data here...'></textarea>
-            <div>
-                <button class="btn" id="generateBtn">
-                    <i class="fas fa-play-circle"></i> Generate Dashboard
-                </button>
-                <button class="btn btn-sample" id="sampleBtn">
-                    <i class="fas fa-magic"></i> Load Sample Data
+            <h2><i class="fas fa-file-csv"></i> Upload CSV File</h2>
+            <p>Upload a CSV file containing call analytics data:</p>
+            
+            <div class="file-upload" id="csvUploadArea">
+                <i class="fas fa-file-csv"></i>
+                <h3>Click to upload CSV file</h3>
+                <p>or drag and drop your CSV file here</p>
+                <input type="file" id="csvFileInput" accept=".csv">
+            </div>
+            
+            <div id="csvPreview" class="csv-preview" style="display: none;">
+                <h4>CSV Preview (first 5 rows):</h4>
+                <div id="csvPreviewContent"></div>
+            </div>
+            
+            <div class="stats-summary" id="statsSummary" style="display: none;">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalCalls">0</div>
+                    <div class="stat-label">Total Calls</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="uniqueAgents">0</div>
+                    <div class="stat-label">Unique Agents</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="avgDuration">0:00</div>
+                    <div class="stat-label">Avg Duration</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalDuration">0:00</div>
+                    <div class="stat-label">Total Duration</div>
+                </div>
+            </div>
+            
+            <div id="callSelectionContainer" style="display: none;">
+                <h4>Select Call to Analyze:</h4>
+                <div class="call-selection" id="callSelection">
+                    <!-- Call buttons will be inserted here -->
+                </div>
+                
+                <div class="current-call-info">
+                    <h4>Currently Viewing:</h4>
+                    <div id="currentCallInfo">No call selected</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button class="btn btn-csv" id="processCsvBtn" disabled>
+                    <i class="fas fa-cogs"></i> Process CSV Data
                 </button>
             </div>
         </div>
@@ -575,7 +714,7 @@
                 <h3><i class="fas fa-comments"></i> Call Transcribe</h3>
                 <div class="transcribe-container" id="transcribe-container">
                     <!-- Transcribe segments will be inserted here -->
-                    <p class="no-data">No data available. Please load JSON data.</p>
+                    <p class="no-data">No data available. Please upload CSV and select a call.</p>
                 </div>
             </div>
         </div>
@@ -619,7 +758,7 @@
                     <h3><i class="fas fa-tasks"></i> Call Checkpoints</h3>
                     <div id="checkpoints-container">
                         <!-- Checkpoints will be inserted here -->
-                        <p class="no-data">No data available. Please load JSON data.</p>
+                        <p class="no-data">No data available. Please upload CSV and select a call.</p>
                     </div>
                 </div>
             </div>
@@ -632,7 +771,7 @@
                     <h3><i class="fas fa-cogs"></i> Detailed Metrics</h3>
                     <div class="card-content" id="detailed-metrics">
                         <!-- Detailed metrics will be inserted here -->
-                        <p class="no-data">No data available. Please load JSON data.</p>
+                        <p class="no-data">No data available. Please upload CSV and select a call.</p>
                     </div>
                 </div>
                 
@@ -640,7 +779,7 @@
                     <h3><i class="fas fa-key"></i> Keywords & Categories</h3>
                     <div class="card-content" id="keywords-container">
                         <!-- Keywords will be inserted here -->
-                        <p class="no-data">No data available. Please load JSON data.</p>
+                        <p class="no-data">No data available. Please upload CSV and select a call.</p>
                     </div>
                 </div>
             </div>
@@ -653,157 +792,60 @@
     </div>
 
     <script>
-        // Sample data matching the provided structure
-        const sampleData = {
-            "Employee Id": "AGC237",
-            "Employee Name": "Aiswarya Pandian",
-            "Executive Number": "8838882036",
-            "Customer Number": "6281771340",
-            "Start Date": "8/12/2025",
-            "Start Time": "11:45:06",
-            "End Date": "8/12/2025",
-            "End Time": "11:50:36",
-            "Duration": "0:05:30",
-            "Recording Link": "https://recordings.mcube.com/mcubefiles111/classic/2025/12/2905/outbound/88388820361765174506.wav",
-            "Call transcribe": [
-                {
-                    "start_time": "00:00:00.000",
-                    "end_time": "00:00:09.000",
-                    "text": "Good morning, sir. This is Aishwarya calling you from AHA Guru Education Technology."
-                },
-                {
-                    "start_time": "00:00:09.000",
-                    "end_time": "00:00:11.000",
-                    "text": "Yes, please tell me."
-                }
-            ],
-            "call_metadata.call_source": "marketing_call",
-            "speaker_analysis.speaker_segments": [],
-            "speaker_analysis.speaker_summary.agent_segments_count": 25,
-            "speaker_analysis.speaker_summary.customer_segments_count": 26,
-            "speaker_analysis.speaker_summary.dominant_speaker": "CUSTOMER",
-            "speaker_analysis.speaker_summary.speaker_switch_count": 36,
-            "call_overview.basic_summary": "Agent Aishwarya from AHA Guru calls a customer regarding a new lead enquiry, but discovers the customer is already a paying customer who purchased courses on November 23rd, 2025. The customer reports a technical issue: they have registered and paid for live classes but cannot access any classes on the site. The agent collects alternative contact information and the customer's username to investigate the CRM issue.",
-            "call_overview.main_purpose": "SUPPORT",
-            "call_overview.outcome": "FOLLOW_UP_NEEDED",
-            "call_overview.next_actions_agreed": "Agent will check the CRM system with the provided information (alternative number 86390333572 and username umma.pakaf57994@gmail.com) and get back to the customer within 5 minutes regarding the missing class access.",
-            "sentiment_tracking.overall_call_sentiment.sentiment_label": "NEUTRAL",
-            "sentiment_tracking.overall_call_sentiment.sentiment_score": 0,
-            "sentiment_tracking.overall_call_sentiment.agent_sentiment": "NEUTRAL",
-            "sentiment_tracking.overall_call_sentiment.customer_sentiment": "NEUTRAL",
-            "sentiment_tracking.sentiment_changes": [
-                {
-                    "time_window": "00:00-01:00",
-                    "sentiment": "NEUTRAL",
-                    "dominant_emotion": "INFORMATIVE"
-                }
-            ],
-            "talk_ratio_analysis.talk_time_seconds.agent_total_seconds": 100,
-            "talk_ratio_analysis.talk_time_seconds.customer_total_seconds": 110,
-            "talk_ratio_analysis.talk_time_seconds.silence_total_seconds": 30,
-            "talk_ratio_analysis.talk_percentage.agent_percentage": 41.7,
-            "talk_ratio_analysis.talk_percentage.customer_percentage": 45.8,
-            "talk_ratio_analysis.talk_percentage.silence_percentage": 12.5,
-            "talk_ratio_analysis.average_turn_length.agent_avg_seconds": 4,
-            "talk_ratio_analysis.average_turn_length.customer_avg_seconds": 4.23,
-            "interruption_analysis.total_interruptions": 1,
-            "interruption_analysis.interruption_details": [
-                {
-                    "interrupter": "CUSTOMER",
-                    "interrupted": "AGENT",
-                    "timestamp": "00:02:16.000"
-                }
-            ],
-            "interruption_analysis.interruption_frequency": "0.33 interruptions per minute",
-            "silence_analysis.total_silence_seconds": 30,
-            "silence_analysis.silence_distribution": [
-                {
-                    "start": "00:02:26.000",
-                    "end": "00:02:46.000",
-                    "duration_seconds": 20
-                }
-            ],
-            "silence_analysis.longest_silence.duration_seconds": 29,
-            "silence_analysis.longest_silence.occurred_at": "00:03:35-00:04:04",
-            "silence_analysis.silence_pattern": "HIGH",
-            "keywords_monitoring.key_products_mentioned": ["IIT, JEE coaching", "NEET", "CBC online classes", "live classes"],
-            "keywords_monitoring.important_phrases": ["already registered", "didn't receive any classes", "check with CRM", "new lead", "alternative number"],
-            "keywords_monitoring.competitors_mentioned": [],
-            "keywords_monitoring.price_mentions": [],
-            "call_categorization.primary_category": "TECHNICAL_SUPPORT",
-            "call_categorization.secondary_categories": ["CUSTOMER_SERVICE", "ACCOUNT_VERIFICATION"],
-            "call_categorization.sales_stage": "POST_SALE_SUPPORT",
-            "call_categorization.customer_type": "EXISTING",
-            "call_categorization.product_focus": "ONLINE_CLASSES_PLATFORM",
-            "call_categorization.category_confidence": 0.95,
-            "agent_performance.performance_score": 70,
-            "agent_performance.strengths": ["Quickly pivoted from sales to support mode", "Professional and polite tone", "Actively listened to customer issue", "Gathered necessary information (date, username, number)", "Set clear expectation for follow-up (5 minutes)"],
-            "agent_performance.improvement_areas": ["Initial assumption was incorrect (thought it was a new lead)", "Could have apologized for the inconvenience", "Did not verify the customer's issue clearly before putting on hold", "Could have provided more reassurance about resolving the issue"],
-            "agent_performance.question_analysis.open_ended_questions": 1,
-            "agent_performance.question_analysis.closed_ended_questions": 7,
-            "agent_performance.question_analysis.probing_questions": 3,
-            "agent_performance.objection_handling.objections_raised": 0,
-            "agent_performance.objection_handling.effectively_addressed": 0,
-            "agent_performance.pitch_delivery.clarity_score": 7,
-            "agent_performance.pitch_delivery.benefits_highlighted": 0,
-            "agent_performance.pitch_delivery.features_explained": 0,
-            "call_timing_metrics.total_call_duration.formatted": "00:05:09",
-            "call_timing_metrics.total_call_duration.total_seconds": 309,
-            "call_timing_metrics.hold_time_analysis.total_hold_seconds": 20,
-            "call_timing_metrics.hold_time_analysis.hold_instances": 1,
-            "call_timing_metrics.response_timing.average_response_time_agent": 1.5,
-            "call_timing_metrics.response_timing.average_response_time_customer": 2,
-            "call_checkpoints": [
-                {
-                    "checkpoint_id": "CHECKPOINT_1",
-                    "checkpoint_name": "OPENING_AND_GREETING",
-                    "achieved_at": "00:00:09.000",
-                    "status": "COMPLETED",
-                    "duration_seconds": 9
-                },
-                {
-                    "checkpoint_id": "CHECKPOINT_2",
-                    "checkpoint_name": "CUSTOMER_IDENTIFICATION",
-                    "achieved_at": "00:00:23.000",
-                    "status": "COMPLETED",
-                    "duration_seconds": 14
-                }
-            ]
-        };
-
         // Global variables
-        let currentData = null;
+        let allCallData = []; // Store all call data from CSV
+        let currentCallIndex = 0; // Index of currently selected call
         let talkRatioChart = null;
         let performanceChart = null;
 
         // DOM elements
-        const jsonInput = document.getElementById('jsonInput');
-        const generateBtn = document.getElementById('generateBtn');
-        const sampleBtn = document.getElementById('sampleBtn');
+        const csvFileInput = document.getElementById('csvFileInput');
+        const csvUploadArea = document.getElementById('csvUploadArea');
+        const csvPreview = document.getElementById('csvPreview');
+        const csvPreviewContent = document.getElementById('csvPreviewContent');
+        const processCsvBtn = document.getElementById('processCsvBtn');
+        const callSelection = document.getElementById('callSelection');
+        const callSelectionContainer = document.getElementById('callSelectionContainer');
+        const currentCallInfo = document.getElementById('currentCallInfo');
+        const statsSummary = document.getElementById('statsSummary');
+        const totalCalls = document.getElementById('totalCalls');
+        const uniqueAgents = document.getElementById('uniqueAgents');
+        const avgDuration = document.getElementById('avgDuration');
+        const totalDuration = document.getElementById('totalDuration');
         const tabs = document.querySelectorAll('.tab');
         const tabContents = document.querySelectorAll('.tab-content');
 
-        // Initialize with sample data
+        // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            // Load sample data
-            jsonInput.value = JSON.stringify(sampleData, null, 2);
-            processData(sampleData);
-            
             // Setup event listeners
-            generateBtn.addEventListener('click', function() {
-                try {
-                    const data = JSON.parse(jsonInput.value);
-                    processData(data);
-                } catch (error) {
-                    alert('Invalid JSON data. Please check your input.');
-                    console.error('JSON parsing error:', error);
+            csvUploadArea.addEventListener('click', function() {
+                csvFileInput.click();
+            });
+            
+            csvFileInput.addEventListener('change', handleFileSelect);
+            
+            // Drag and drop for CSV
+            csvUploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                csvUploadArea.style.backgroundColor = 'var(--light-blue)';
+            });
+            
+            csvUploadArea.addEventListener('dragleave', function() {
+                csvUploadArea.style.backgroundColor = 'var(--white)';
+            });
+            
+            csvUploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                csvUploadArea.style.backgroundColor = 'var(--white)';
+                
+                if (e.dataTransfer.files.length) {
+                    csvFileInput.files = e.dataTransfer.files;
+                    handleFileSelect(e);
                 }
             });
             
-            sampleBtn.addEventListener('click', function() {
-                jsonInput.value = JSON.stringify(sampleData, null, 2);
-                processData(sampleData);
-            });
+            // Process CSV button
+            processCsvBtn.addEventListener('click', processCsvData);
             
             // Tab switching
             tabs.forEach(tab => {
@@ -825,10 +867,433 @@
             });
         });
 
+        // Handle CSV file selection
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                alert('Please select a CSV file');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csvContent = e.target.result;
+                parseCSV(csvContent);
+            };
+            reader.readAsText(file);
+        }
+
+        // Parse CSV content
+        function parseCSV(csvContent) {
+            const lines = csvContent.split('\n').filter(line => line.trim() !== '');
+            if (lines.length === 0) {
+                alert('CSV file is empty');
+                return;
+            }
+            
+            // Parse headers
+            const headers = parseCSVLine(lines[0]);
+            
+            // Parse data rows for preview
+            const data = [];
+            const maxPreviewRows = Math.min(6, lines.length);
+            for (let i = 1; i < maxPreviewRows; i++) {
+                const row = parseCSVLine(lines[i]);
+                const rowData = {};
+                headers.forEach((header, index) => {
+                    rowData[header] = row[index] || '';
+                });
+                data.push(rowData);
+            }
+            
+            // Store full CSV data
+            allCallData = []; // Reset existing data
+            
+            // Parse all rows for actual data
+            for (let i = 1; i < lines.length; i++) {
+                const row = parseCSVLine(lines[i]);
+                const rowData = {};
+                headers.forEach((header, index) => {
+                    rowData[header] = row[index] || '';
+                });
+                allCallData.push(rowData);
+            }
+            
+            // Show preview
+            csvPreview.style.display = 'block';
+            csvPreviewContent.innerHTML = generateTablePreview(headers, data);
+            
+            // Enable process button
+            processCsvBtn.disabled = false;
+        }
+
+        // Parse a single CSV line (handling quoted fields)
+        function parseCSVLine(line) {
+            const result = [];
+            let inQuotes = false;
+            let currentField = '';
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    // Toggle quote mode
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    // End of field
+                    result.push(currentField);
+                    currentField = '';
+                } else {
+                    currentField += char;
+                }
+            }
+            
+            // Add the last field
+            result.push(currentField);
+            
+            return result.map(field => field.trim());
+        }
+
+        // Generate HTML table preview
+        function generateTablePreview(headers, data) {
+            let html = '<table style="width:100%; border-collapse: collapse;">';
+            
+            // Header row
+            html += '<thead><tr>';
+            headers.forEach(header => {
+                html += `<th style="border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2;">${header}</th>`;
+            });
+            html += '</tr></thead>';
+            
+            // Data rows
+            html += '<tbody>';
+            data.forEach(row => {
+                html += '<tr>';
+                headers.forEach(header => {
+                    const value = row[header] || '';
+                    // Truncate long values for preview
+                    const displayValue = value.length > 50 ? value.substring(0, 50) + '...' : value;
+                    html += `<td style="border: 1px solid #ddd; padding: 8px;">${displayValue}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            
+            return html;
+        }
+
+        // Process CSV data and generate call buttons
+        function processCsvData() {
+            if (allCallData.length === 0) {
+                alert('No data to process');
+                return;
+            }
+            
+            // Generate call selection buttons
+            generateCallButtons();
+            
+            // Show call selection container
+            callSelectionContainer.style.display = 'block';
+            
+            // Calculate and show stats
+            updateStatsSummary();
+            
+            // Show stats summary
+            statsSummary.style.display = 'grid';
+            
+            // Select first call by default
+            if (allCallData.length > 0) {
+                selectCall(0);
+            }
+            
+            alert(`Successfully processed ${allCallData.length} call records!`);
+        }
+
+        // Generate call selection buttons
+        function generateCallButtons() {
+            callSelection.innerHTML = '';
+            
+            allCallData.forEach((call, index) => {
+                // Create primary key: Employee Id + Employee Name + Start Date + Start Time
+                const employeeId = call['Employee Id'] || 'N/A';
+                const employeeName = call['Employee Name'] || 'N/A';
+                const startDate = call['Start Date'] || 'N/A';
+                const startTime = call['Start Time'] || 'N/A';
+                
+                const primaryKey = `${employeeId} - ${employeeName} - ${startDate} ${startTime}`;
+                
+                // Create button
+                const button = document.createElement('button');
+                button.className = 'call-btn';
+                if (index === 0) button.classList.add('active');
+                button.textContent = primaryKey;
+                button.dataset.index = index;
+                
+                button.addEventListener('click', function() {
+                    selectCall(index);
+                    
+                    // Update active button
+                    document.querySelectorAll('.call-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                });
+                
+                callSelection.appendChild(button);
+            });
+        }
+
+        // Select and display a specific call
+        function selectCall(index) {
+            if (index < 0 || index >= allCallData.length) return;
+            
+            currentCallIndex = index;
+            const callData = allCallData[index];
+            
+            // Update current call info
+            updateCurrentCallInfo(callData);
+            
+            // Convert CSV row to JSON format and display
+            const jsonData = convertCsvRowToJson(callData);
+            processData(jsonData);
+        }
+
+        // Update current call info display
+        function updateCurrentCallInfo(callData) {
+            const employeeId = callData['Employee Id'] || 'N/A';
+            const employeeName = callData['Employee Name'] || 'N/A';
+            const customerNumber = callData['Customer Number'] || 'N/A';
+            const startDate = callData['Start Date'] || 'N/A';
+            const startTime = callData['Start Time'] || 'N/A';
+            const duration = callData['Duration'] || 'N/A';
+            
+            currentCallInfo.innerHTML = `
+                <div><strong>Employee:</strong> ${employeeName} (${employeeId})</div>
+                <div><strong>Customer:</strong> ${customerNumber}</div>
+                <div><strong>Date/Time:</strong> ${startDate} ${startTime}</div>
+                <div><strong>Duration:</strong> ${duration}</div>
+                <div><strong>Call ${currentCallIndex + 1} of ${allCallData.length}</strong></div>
+            `;
+        }
+
+        // Update stats summary
+        function updateStatsSummary() {
+            if (allCallData.length === 0) return;
+            
+            // Total calls
+            totalCalls.textContent = allCallData.length;
+            
+            // Unique agents
+            const uniqueAgentSet = new Set();
+            allCallData.forEach(call => {
+                const agentName = call['Employee Name'] || '';
+                if (agentName) uniqueAgentSet.add(agentName);
+            });
+            uniqueAgents.textContent = uniqueAgentSet.size;
+            
+            // Calculate total and average duration
+            let totalSeconds = 0;
+            let validDurations = 0;
+            
+            allCallData.forEach(call => {
+                const duration = call['Duration'] || '';
+                if (duration) {
+                    // Parse duration in format "0:05:30"
+                    const parts = duration.split(':');
+                    if (parts.length === 3) {
+                        const hours = parseInt(parts[0]) || 0;
+                        const minutes = parseInt(parts[1]) || 0;
+                        const seconds = parseInt(parts[2]) || 0;
+                        totalSeconds += hours * 3600 + minutes * 60 + seconds;
+                        validDurations++;
+                    }
+                }
+            });
+            
+            // Format total duration
+            const totalHours = Math.floor(totalSeconds / 3600);
+            const totalMinutes = Math.floor((totalSeconds % 3600) / 60);
+            const totalRemainingSeconds = totalSeconds % 60;
+            totalDuration.textContent = `${totalHours}:${totalMinutes.toString().padStart(2, '0')}:${totalRemainingSeconds.toString().padStart(2, '0')}`;
+            
+            // Calculate and format average duration
+            if (validDurations > 0) {
+                const avgSeconds = Math.round(totalSeconds / validDurations);
+                const avgHours = Math.floor(avgSeconds / 3600);
+                const avgMinutes = Math.floor((avgSeconds % 3600) / 60);
+                const avgRemainingSeconds = avgSeconds % 60;
+                
+                let avgDurationText = '';
+                if (avgHours > 0) {
+                    avgDurationText = `${avgHours}:${avgMinutes.toString().padStart(2, '0')}:${avgRemainingSeconds.toString().padStart(2, '0')}`;
+                } else {
+                    avgDurationText = `${avgMinutes}:${avgRemainingSeconds.toString().padStart(2, '0')}`;
+                }
+                avgDuration.textContent = avgDurationText;
+            } else {
+                avgDuration.textContent = '0:00';
+            }
+        }
+
+        // Convert CSV row to JSON format matching the dashboard structure
+        function convertCsvRowToJson(callData) {
+            // Create a basic JSON structure
+            const jsonData = {
+                "Employee Id": callData['Employee Id'] || '',
+                "Employee Name": callData['Employee Name'] || '',
+                "Executive Number": callData['Executive Number'] || '',
+                "Customer Number": callData['Customer Number'] || '',
+                "Start Date": callData['Start Date'] || '',
+                "Start Time": callData['Start Time'] || '',
+                "End Date": callData['End Date'] || '',
+                "End Time": callData['End Time'] || '',
+                "Duration": callData['Duration'] || '',
+                "Recording Link": callData['Recording Link'] || '',
+                "Call transcribe": parseTranscribeData(callData),
+                "call_metadata.call_source": callData['call_metadata.call_source'] || 'marketing_call',
+                "speaker_analysis.speaker_segments": parseSpeakerSegments(callData),
+                "speaker_analysis.speaker_summary.agent_segments_count": parseInt(callData['speaker_analysis.speaker_summary.agent_segments_count']) || 0,
+                "speaker_analysis.speaker_summary.customer_segments_count": parseInt(callData['speaker_analysis.speaker_summary.customer_segments_count']) || 0,
+                "speaker_analysis.speaker_summary.dominant_speaker": callData['speaker_analysis.speaker_summary.dominant_speaker'] || 'AGENT',
+                "speaker_analysis.speaker_summary.speaker_switch_count": parseInt(callData['speaker_analysis.speaker_summary.speaker_switch_count']) || 0,
+                "call_overview.basic_summary": callData['call_overview.basic_summary'] || 'No summary available',
+                "call_overview.main_purpose": callData['call_overview.main_purpose'] || 'UNKNOWN',
+                "call_overview.outcome": callData['call_overview.outcome'] || 'UNKNOWN',
+                "call_overview.next_actions_agreed": callData['call_overview.next_actions_agreed'] || 'No next actions specified',
+                "sentiment_tracking.overall_call_sentiment.sentiment_label": callData['sentiment_tracking.overall_call_sentiment.sentiment_label'] || 'NEUTRAL',
+                "sentiment_tracking.overall_call_sentiment.sentiment_score": parseFloat(callData['sentiment_tracking.overall_call_sentiment.sentiment_score']) || 0,
+                "sentiment_tracking.overall_call_sentiment.agent_sentiment": callData['sentiment_tracking.overall_call_sentiment.agent_sentiment'] || 'NEUTRAL',
+                "sentiment_tracking.overall_call_sentiment.customer_sentiment": callData['sentiment_tracking.overall_call_sentiment.customer_sentiment'] || 'NEUTRAL',
+                "sentiment_tracking.sentiment_changes": parseSentimentChanges(callData),
+                "talk_ratio_analysis.talk_time_seconds.agent_total_seconds": parseInt(callData['talk_ratio_analysis.talk_time_seconds.agent_total_seconds']) || 0,
+                "talk_ratio_analysis.talk_time_seconds.customer_total_seconds": parseInt(callData['talk_ratio_analysis.talk_time_seconds.customer_total_seconds']) || 0,
+                "talk_ratio_analysis.talk_time_seconds.silence_total_seconds": parseInt(callData['talk_ratio_analysis.talk_time_seconds.silence_total_seconds']) || 0,
+                "talk_ratio_analysis.talk_percentage.agent_percentage": parseFloat(callData['talk_ratio_analysis.talk_percentage.agent_percentage']) || 0,
+                "talk_ratio_analysis.talk_percentage.customer_percentage": parseFloat(callData['talk_ratio_analysis.talk_percentage.customer_percentage']) || 0,
+                "talk_ratio_analysis.talk_percentage.silence_percentage": parseFloat(callData['talk_ratio_analysis.talk_percentage.silence_percentage']) || 0,
+                "talk_ratio_analysis.average_turn_length.agent_avg_seconds": parseFloat(callData['talk_ratio_analysis.average_turn_length.agent_avg_seconds']) || 0,
+                "talk_ratio_analysis.average_turn_length.customer_avg_seconds": parseFloat(callData['talk_ratio_analysis.average_turn_length.customer_avg_seconds']) || 0,
+                "interruption_analysis.total_interruptions": parseInt(callData['interruption_analysis.total_interruptions']) || 0,
+                "interruption_analysis.interruption_details": parseInterruptionDetails(callData),
+                "interruption_analysis.interruption_frequency": callData['interruption_analysis.interruption_frequency'] || '0 interruptions per minute',
+                "silence_analysis.total_silence_seconds": parseInt(callData['silence_analysis.total_silence_seconds']) || 0,
+                "silence_analysis.silence_distribution": parseSilenceDistribution(callData),
+                "silence_analysis.longest_silence.duration_seconds": parseInt(callData['silence_analysis.longest_silence.duration_seconds']) || 0,
+                "silence_analysis.longest_silence.occurred_at": callData['silence_analysis.longest_silence.occurred_at'] || '00:00:00-00:00:00',
+                "silence_analysis.silence_pattern": callData['silence_analysis.silence_pattern'] || 'NORMAL',
+                "keywords_monitoring.key_products_mentioned": parseArray(callData['keywords_monitoring.key_products_mentioned']),
+                "keywords_monitoring.important_phrases": parseArray(callData['keywords_monitoring.important_phrases']),
+                "keywords_monitoring.competitors_mentioned": parseArray(callData['keywords_monitoring.competitors_mentioned']),
+                "keywords_monitoring.price_mentions": parseArray(callData['keywords_monitoring.price_mentions']),
+                "call_categorization.primary_category": callData['call_categorization.primary_category'] || 'UNCATEGORIZED',
+                "call_categorization.secondary_categories": parseArray(callData['call_categorization.secondary_categories']),
+                "call_categorization.sales_stage": callData['call_categorization.sales_stage'] || 'UNKNOWN',
+                "call_categorization.customer_type": callData['call_categorization.customer_type'] || 'UNKNOWN',
+                "call_categorization.product_focus": callData['call_categorization.product_focus'] || 'UNKNOWN',
+                "call_categorization.category_confidence": parseFloat(callData['call_categorization.category_confidence']) || 0,
+                "agent_performance.performance_score": parseInt(callData['agent_performance.performance_score']) || 0,
+                "agent_performance.strengths": parseArray(callData['agent_performance.strengths']),
+                "agent_performance.improvement_areas": parseArray(callData['agent_performance.improvement_areas']),
+                "agent_performance.question_analysis.open_ended_questions": parseInt(callData['agent_performance.question_analysis.open_ended_questions']) || 0,
+                "agent_performance.question_analysis.closed_ended_questions": parseInt(callData['agent_performance.question_analysis.closed_ended_questions']) || 0,
+                "agent_performance.question_analysis.probing_questions": parseInt(callData['agent_performance.question_analysis.probing_questions']) || 0,
+                "agent_performance.objection_handling.objections_raised": parseInt(callData['agent_performance.objection_handling.objections_raised']) || 0,
+                "agent_performance.objection_handling.effectively_addressed": parseInt(callData['agent_performance.objection_handling.effectively_addressed']) || 0,
+                "agent_performance.pitch_delivery.clarity_score": parseInt(callData['agent_performance.pitch_delivery.clarity_score']) || 0,
+                "agent_performance.pitch_delivery.benefits_highlighted": parseInt(callData['agent_performance.pitch_delivery.benefits_highlighted']) || 0,
+                "agent_performance.pitch_delivery.features_explained": parseInt(callData['agent_performance.pitch_delivery.features_explained']) || 0,
+                "call_timing_metrics.total_call_duration.formatted": callData['call_timing_metrics.total_call_duration.formatted'] || '00:00:00',
+                "call_timing_metrics.total_call_duration.total_seconds": parseInt(callData['call_timing_metrics.total_call_duration.total_seconds']) || 0,
+                "call_timing_metrics.hold_time_analysis.total_hold_seconds": parseInt(callData['call_timing_metrics.hold_time_analysis.total_hold_seconds']) || 0,
+                "call_timing_metrics.hold_time_analysis.hold_instances": parseInt(callData['call_timing_metrics.hold_time_analysis.hold_instances']) || 0,
+                "call_timing_metrics.response_timing.average_response_time_agent": parseFloat(callData['call_timing_metrics.response_timing.average_response_time_agent']) || 0,
+                "call_timing_metrics.response_timing.average_response_time_customer": parseFloat(callData['call_timing_metrics.response_timing.average_response_time_customer']) || 0,
+                "call_checkpoints": parseCheckpoints(callData)
+            };
+            
+            return jsonData;
+        }
+
+        // Helper function to parse array data from CSV
+        function parseArray(dataString) {
+            if (!dataString) return [];
+            
+            try {
+                // Try to parse as JSON array
+                const parsed = JSON.parse(dataString);
+                if (Array.isArray(parsed)) return parsed;
+            } catch (e) {
+                // If not JSON, try to split by comma
+                return dataString.split(',').map(item => item.trim()).filter(item => item);
+            }
+            
+            return [];
+        }
+
+        // Parse transcribe data
+        function parseTranscribeData(callData) {
+            try {
+                const transcribeString = callData['Call transcribe'] || callData['call_transcribe'] || '[]';
+                return JSON.parse(transcribeString);
+            } catch (e) {
+                return [];
+            }
+        }
+
+        // Parse speaker segments
+        function parseSpeakerSegments(callData) {
+            try {
+                const segmentsString = callData['speaker_analysis.speaker_segments'] || '[]';
+                return JSON.parse(segmentsString);
+            } catch (e) {
+                return [];
+            }
+        }
+
+        // Parse sentiment changes
+        function parseSentimentChanges(callData) {
+            try {
+                const changesString = callData['sentiment_tracking.sentiment_changes'] || '[]';
+                return JSON.parse(changesString);
+            } catch (e) {
+                return [];
+            }
+        }
+
+        // Parse interruption details
+        function parseInterruptionDetails(callData) {
+            try {
+                const detailsString = callData['interruption_analysis.interruption_details'] || '[]';
+                return JSON.parse(detailsString);
+            } catch (e) {
+                return [];
+            }
+        }
+
+        // Parse silence distribution
+        function parseSilenceDistribution(callData) {
+            try {
+                const distributionString = callData['silence_analysis.silence_distribution'] || '[]';
+                return JSON.parse(distributionString);
+            } catch (e) {
+                return [];
+            }
+        }
+
+        // Parse checkpoints
+        function parseCheckpoints(callData) {
+            try {
+                const checkpointsString = callData['call_checkpoints'] || '[]';
+                return JSON.parse(checkpointsString);
+            } catch (e) {
+                return [];
+            }
+        }
+
         // Process JSON data and update dashboard
         function processData(data) {
-            currentData = data;
-            
             // Update overview tab
             updateOverview(data);
             
